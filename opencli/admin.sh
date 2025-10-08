@@ -5,7 +5,7 @@
 # Usage: opencli admin <setting_name> 
 # Author: Stefan Pejcic
 # Created: 01.11.2023
-# Last Modified: 17.09.2025
+# Last Modified: 05.10.2025
 # Company: openpanel.com
 # Copyright (c) openpanel.com
 # 
@@ -66,7 +66,8 @@ usage() {
     echo "  list                                          List all current admin users."
     echo "  new <user> <pass>                             Add a new user with the specified username and password."
     echo "  password <user> <pass>                        Reset the password for the specified admin user."
-    echo "  rename <old> <new>                            Change the admin username."
+    echo "  update <user> --allowed_plans=[] --max_accounts=<int> --max_disk_blocks=1000000 Assign plans and set limits for reseller."
+	echo "  rename <old> <new>                            Change the admin username."
     echo "  suspend <user>                                Suspend admin user."
     echo "  unsuspend <user>                              Unsuspend admin user."
     echo "  notifications <command> <param> [value]       Control notification preferences."
@@ -237,7 +238,49 @@ add_new_user() {
 }
 
 
+# Sets max accounts and plans for reseller account
+update_reseller_account() {
+    local username="$1"
+    local allowed_plans="$2"
+    local max_accounts="$3"
+	local max_disk_blocks="$4"
+    local resellers_dir="/etc/openpanel/openadmin/resellers"
+    local reseller_file="$resellers_dir/$username.json"
 
+    if [[ ! -f "$reseller_file" ]]; then
+        echo "Error: Reseller file $reseller_file not found!"
+        return 1
+    fi
+
+    if [[ -z "$max_accounts" ]]; then
+        max_accounts=0
+    fi
+	
+    if [[ -z "$max_disk_blocks" ]]; then
+        max_disk_blocks=0
+    fi
+
+    allowed_plans="${allowed_plans%,}"
+
+    if [[ -n "$allowed_plans" ]]; then
+        IFS=',' read -r -a plans_array <<< "$allowed_plans"
+        plans_json=$(printf '%s\n' "${plans_array[@]}" | jq -R . | jq -s .)
+    else
+        plans_json="[]"
+    fi
+
+    #jq --arg max_accounts "$max_accounts" --argjson allowed_plans "$plans_json" \
+    #   '.max_accounts = $max_accounts | .allowed_plans = $allowed_plans' \
+    #   "$reseller_file" > "$reseller_file.tmp" && mv "$reseller_file.tmp" "$reseller_file"
+
+	jq --argjson max_accounts "$max_accounts" \
+	   --argjson allowed_plans "$plans_json" \
+	   --argjson max_disk_blocks "$max_disk_blocks" \
+	   '.max_accounts = $max_accounts | .allowed_plans = $allowed_plans | .max_disk_blocks = $max_disk_blocks' \
+	   "$reseller_file" > "$reseller_file.tmp" && mv "$reseller_file.tmp" "$reseller_file"
+
+    echo "Reseller $username updated successfully."
+}
 
 
 
@@ -252,16 +295,12 @@ update_username() {
         if [ "$new_user_exists" -gt 0 ]; then
             echo -e "${RED}Error${RESET}: Username '$new_username' already taken."
         else
-       
             sqlite3 $db_file_path "UPDATE user SET username='$new_username' WHERE username='$old_username';"
-	    
-	    sed -i "s/\b$old_username\b/$new_username/g" /var/log/openpanel/admin/login.log   > /dev/null 2>&1
-     
             echo "User '$old_username' renamed to '$new_username'."
-            
-            local reseller_limits_dir="/etc/openpanel/openadmin/resellers"
-	    mv $reseller_limits_dir/$old_username.json $reseller_limits_dir/$new_username.json  > /dev/null 2>&1
-   
+	    	sed -i "s/\b$old_username\b/$new_username/g" /var/log/openpanel/admin/login.log   > /dev/null 2>&1
+			# for resellers
+			mv /etc/openpanel/features/$old_username /etc/openpanel/features/$username  > /dev/null 2>&1
+	    	mv /etc/openpanel/openadmin/resellers/$old_username.json /etc/openpanel/openadmin/resellers/$new_username.json  > /dev/null 2>&1   
         fi
     else
         echo -e "${RED}Error${RESET}: User '$old_username' not found."
@@ -364,7 +403,12 @@ delete_existing_users() {
         
             local reseller_limits_file="/etc/openpanel/openadmin/resellers/$username.json"
 			rm $reseller_limits_file  > /dev/null 2>&1
-        
+
+            local reseller_features="/etc/openpanel/features/$username"
+			# todo: check and also delete plans assigned to the user and no-one else!
+			#         SELECT 1         FROM plans         WHERE feature_set = %s         LIMIT 1;
+			rm -rf $reseller_features  > /dev/null 2>&1
+		
             sqlite3 $db_file_path "DELETE FROM user WHERE username='$username';"            
             echo "User '$username' deleted successfully."
         fi
@@ -570,7 +614,15 @@ case "$1" in
         # List users
         list_current_users
         ;;
-    "suspend")
+    "update")
+        # Set reseller limits
+        username="$2"
+        allowed_plans="${3#--allowed_plans=}"
+        max_accounts="${4#--max_accounts=}"
+		max_disk_blocks="${4#--max_disk_blocks=}"
+        update_reseller_account "$username" "$allowed_plans" "$max_accounts" "$max_disk_blocks"
+        ;;   
+	"suspend")
         # List users
         username="$2"
         suspend_user "$username"
