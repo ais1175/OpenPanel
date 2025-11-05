@@ -15,12 +15,14 @@ Minimum Requirements:
 - AMD64(x86_64) or ARM(AArch64) architecture
 - IPv4 address
 
-Supported OS:
+Supported operating systems:
 - **Ubuntu 24.04** (recommended)
 - **Debian 10, 11, 12, 13**
-- **AlmaLinux 9.5 and 10** (recommended for ARM cpu)
-- **RockyLinux 9.6, 10** (*On Rocky 10, you must manually switch from `nftables` to `iptables` first — see [#1472](https://github.com/docker/for-linux/issues/1472)*)
+- **AlmaLinux 9.5 and 10** (recommended for ARM CPU)
+- **RockyLinux 9.6, 10**
 - **CentOS 9.5**
+
+*Docker needs iptables, so on AlmaLinux 10 and RockyLinux 10, you must switch from `nftables` to `iptables`. See [#1472](https://github.com/docker/for-linux/issues/1472) and [#745](https://github.com/stefanpejcic/OpenPanel/issues/745#issuecomment-3451272947).
 
 :::info
 If you are using external firewall, the following ports should be opened:  `25` `53` `80` `443` `465` `993` `2083` `2087` `32768:60999`
@@ -51,16 +53,22 @@ If you encountered any errors while running the installation script, please copy
   <TabItem value="openpanel-install-on-cloud" label="Cloud">
 
 [Amazon Web Services (AWS)](/docs/articles/install-update/install-on-aws)
+
 [DigitalOcean](/docs/articles/install-update/install-on-digitalocean)
+
 [Google Cloud Platform (GCP)](/docs/articles/install-update/install-on-google-cloud)
+
 [Microsoft Azure](/docs/articles/install-update/install-on-microsoft-azure)
+
 [Vultr](/docs/articles/install-update/install-on-vultr)
     
   </TabItem>
   <TabItem value="openpanel-install-on-other" label="Other">
 
 [CloudInit](/docs/articles/install-update/install-using-cloudinit)
+
 [Ansible](/docs/articles/install-update/install-using-ansible)
+
 [Virtualizor](/docs/articles/install-update/install-on-virtualizor)
 
   </TabItem>  

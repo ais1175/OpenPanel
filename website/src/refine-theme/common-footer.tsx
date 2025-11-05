@@ -3,6 +3,7 @@ import React from "react";
 import { socialLinks } from "./footer-data";
 
 export const CommonFooter = () => {
+    const currentYear = new Date().getFullYear();
     return (
         <footer
             className={clsx(
@@ -27,7 +28,17 @@ export const CommonFooter = () => {
                         // "mt-4 sm:mt-0",
                     )}
                 >
-                    OpenPanel © 2025
+
+                <a
+                    href="https://pejcic.rs/?utm_src=openpanel.com/docs"
+                    target="_blank"
+                    className={clsx(
+                        "no-underline",
+                    )}
+                >
+                    Stefan Pejcic
+                </a>
+                    © {`2023–${currentYear}`}
                 </div>
 
                 <div

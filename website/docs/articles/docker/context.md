@@ -142,13 +142,19 @@ Contains the DNS records for the domain.
 
 ## Backups
 
-OpenPanel uses [offen/docker-volume-backup](https://offen.github.io/docker-volume-backup/) for backups. Configuration is stored in `backup.env`.
+OpenPanel uses [offen/docker-volume-backup](https://offen.github.io/docker-volume-backup/) for backups. Configuration is stored in `/home/{CONTEXT}/backup.env`.
 
 * Administrators can schedule automatic backups for users.
 * Users can also enable and manage their own backups if permitted.
 * Only Docker volumes are backed up, which include the actual user data (website files and databases).
 
 For detailed instructions, see: [Configuring OpenPanel Backups](/docs/articles/backups/configuring-backups)
+
+---
+
+## Crons
+
+OpenPanel uses [mcuadros/ofelia](https://github.com/mcuadros/ofelia) for cron obs. Configuration is stored in `/home/{CONTEXT}/crons.ini`.
 
 ---
 

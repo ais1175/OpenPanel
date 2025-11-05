@@ -20,7 +20,7 @@ export const EnterpriseGetInTouchButton: FC<Props> = (props) => {
             )}
         >
             <Link
-                href="https://my.openpanel.com/cart.php?a=confproduct&i=1"
+                href="https://my.openpanel.com/index.php?rp=/store/openpanel/enterprise-license"
                 target="_self"
                 rel="noopener noreferrer"
                 className={clsx(
@@ -46,7 +46,7 @@ export const EnterpriseGetInTouchButton: FC<Props> = (props) => {
             >
                 <GetInTouchIcon />
                 <span className={clsx("text-base", "font-semibold")}>
-                    Go Enterprise
+                    Purchase license
                 </span>
             </Link>
         </div>

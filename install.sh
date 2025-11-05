@@ -10,7 +10,7 @@
 # Usage:                   bash <(curl -sSL https://openpanel.org)
 # Author:                  Stefan Pejcic <stefan@pejcic.rs>
 # Created:                 11.07.2023
-# Last Modified:           17.09.2025
+# Last Modified:           29.10.2025
 #
 ################################################################################
 
@@ -43,14 +43,16 @@ SET_PREMIUM=false                                                     # added in
 SET_ADMIN_USERNAME=false                                              # random
 SET_ADMIN_PASSWORD=false                                              # random
 SCREENSHOTS_API_URL="http://screenshots-v2.openpanel.com/api/screenshot" # default since 0.5.9
+readonly DEFAULT_PANEL_VERSION="1.6.6"                                # https://github.com/stefanpejcic/OpenPanel/blob/a383bbfcdffdcf052136a3ae79554b68012f4b69/.github/workflows/update-version.yml#L49
+readonly DOCKER_COMPOSE_VERSION="v2.40.2"                             # https://github.com/docker/compose/releases
 DEV_MODE=false
 post_install_path=""                                                  # not to run
 # ======================================================================
 # PATHs used throughout the script
-ETC_DIR="/etc/openpanel/"                                             # https://github.com/stefanpejcic/openpanel-configuration
-LOG_FILE="openpanel_install.log"                                      # install log                                      # install running
-SERVICES_DIR="/etc/systemd/system/"                                   # used for admin and sentinel services
-CONFIG_FILE="${ETC_DIR}openpanel/conf/openpanel.config"               # main config file for openpanel
+readonly ETC_DIR="/etc/openpanel/"                                             # https://github.com/stefanpejcic/openpanel-configuration
+readonly LOG_FILE="openpanel_install.log"                                      # install log                                      # install running
+readonly SERVICES_DIR="/etc/systemd/system/"                                   # used for admin and sentinel services
+readonly CONFIG_FILE="${ETC_DIR}openpanel/conf/openpanel.config"               # main config file for openpanel
 
 exec > >(tee -a "$LOG_FILE") 2>&1
 
@@ -76,7 +78,7 @@ install_started_message(){
     echo -e "\nStarting the installation of OpenPanel. This process will take approximately 3-5 minutes."
     echo -e "During this time, we will:"
     if [ "$SKIP_FIREWALL" = false ]; then
-    	echo -e "- Install necessary services and tools: CSF, Docker, MySQL, SQLite, Python3, PIP.. "
+    	echo -e "- Install necessary services and tools: Sentinel Firewall, Docker, MySQL, SQLite, Python3, PIP.. "
     else
 		echo -e "- Install necessary services and tools: Docker, MySQL, SQLite, Python3, PIP.. "
     fi
@@ -90,7 +92,7 @@ install_started_message(){
 		echo -e "- Create an admin account with random username and strong password for you."
     fi
     if [ "$SKIP_FIREWALL" = false ]; then
-    	echo -e "- Set up ConfigServer Firewall for enhanced security."
+    	echo -e "- Set up Sentinel Firewall for enhanced security."
     fi
 
     echo -e "- Set up 2 hosting plans so you can start right away."
@@ -101,7 +103,7 @@ install_started_message(){
 }
 
 radovan() {
-    echo -e "${RED}INSTALLATION FAILED${RESET}"
+    echo -e "${RED}INSTALLATION FAILED${RESET} - Please retry with '--repair' flag"
     echo ""
     echo -e "Error: $2" >&2
     exit 1
@@ -122,12 +124,23 @@ debug_log() {
 }
 
 is_package_installed() {
-    if [ "$DEBUG" = false ]; then
-    $PACKAGE_MANAGER -qq list "$1" 2>/dev/null | grep -qE "^ii"
-    else
-    $PACKAGE_MANAGER -qq list "$1" | grep -qE "^ii"
-    echo "Updating $PACKAGE_MANAGER package manager.."
-    fi
+    local package="$1"
+    [ -z "$package" ] && return 1
+
+    case "$PACKAGE_MANAGER" in
+        yum|dnf)
+            "$PACKAGE_MANAGER" list installed "$package" &> /dev/null
+            ;;
+        apt-get)
+            dpkg -l 2>/dev/null | grep -q "^ii[[:space:]]*${package}"
+            ;;
+        *)
+            echo "Unsupported package manager: $PACKAGE_MANAGER" >&2
+            return 1
+            ;;
+    esac
+
+    return $?
 }
 
 get_server_ipv4() {
@@ -160,7 +173,7 @@ set_version_to_install() {
             PANEL_VERSION=$(echo "$response" | grep -oP '"latest_version":"\K[^"]+')
         fi
 
-        [[ "$PANEL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || PANEL_VERSION="1.6.0"
+        [[ "$PANEL_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || PANEL_VERSION="$DEFAULT_PANEL_VERSION"
     fi
 }
 
@@ -229,13 +242,13 @@ detect_os_cpu_and_package_manager         # detect os and package manager
 display_what_will_be_installed            # display os, version, ip
 install_python
 update_package_manager                    # update dnf/yum/apt-get
-install_packages                          # install docker, csf, sqlite, etc.
+install_packages                          # install docker, sentinel, sqlite, etc.
 download_skeleton_directory_from_github   # download configuration to /etc/openpanel/
 edit_fstab                                # enable quotas
 setup_bind                                # must run after -configuration
 install_openadmin                         # set admin interface
 opencli_setup                             # set terminal commands
-extra_step_on_hetzner                     # run it here, then csf install does docker restart later
+extra_step_on_hetzner                     # run it here, then sentinel install does docker restart later
 setup_redis_service                       # for redis container
 create_rdnc                               # generate rdnc key for managing domains
 panel_customize                           # customizations
@@ -248,7 +261,7 @@ enable_dev_mode                           # https://dev.openpanel.com/cli/config
 set_custom_hostname                       # set hostname if provided
 generate_and_set_ssl_for_panels           # if FQDN then lets setup https
 setup_firewall_service                    # setup firewall
-set_system_cronjob                        # setup crons, must be after csf
+set_system_cronjob                        # setup crons, must be after sentinel
 set_logrotate                             # setup logrotate, ignored on fedora
 tweak_ssh                                 # basic ssh
 log_dirs                                  # for almalinux
@@ -312,20 +325,14 @@ check_requirements() {
 		    fi
 		}
 
-		# Check if running as root
 		check_condition '[ "$(id -u)" != "0" ]' "you must be root to execute this script" false
-
-		# Check OS
 		check_condition '[ "$(uname)" = "Darwin" ]' "MacOS is not currently supported" true
+		check_condition '[[ -f /.dockerenv || -f /run/.containerenv || -n $(tr "\0" "\n" < /proc/1/environ | grep -i "^container=") || $(grep -Eq "docker|lxc|lxd|podman|containerd" /proc/1/cgroup) || -f /run/systemd/container ]]' \
+		    "running inside a container is not supported" false
 
-		# Check if running inside a container
-		check_condition '[[ -f /.dockerenv || $(grep -sq "docker\|lxc" /proc/1/cgroup) ]]' "running inside a container is not supported" false
-
-		# Check RAM
 		total_mb=$(( $(grep MemTotal /proc/meminfo | awk '{print $2}') / 1024 ))
 		check_requirement "$total_mb" 1024 "MB" "at least 1GB of RAM is required"
 
-		# Check available disk space on /
 		available_mb=$(( $(df / --output=avail | tail -1) / 1024 ))
 		check_requirement "$available_mb" 5120 "MB" "at least 5GB of free disk space is required on /"
     fi
@@ -349,13 +356,13 @@ parse_args() {
         echo "  --skip-requirements             Skip the requirements check."
         echo "  --skip-panel-check              Skip checking if existing panels are installed."
         echo "  --skip-apt-update               Skip the APT update."
-        echo "  --skip-firewall                 Skip installing CSF - Only do this if you will set another external firewall!"
+        echo "  --skip-firewall                 Skip installing Sentinel Firewall - Only do this if you will set another external firewall!"
         echo "  --no-waf                        Do not configure CorazaWAF with OWASP Coreruleset."
         echo "  --no-ssh                        Disable port 22 and whitelist the IP address of user installing the panel."
         echo "  --skip-dns-server               Skip setup for DNS (Bind9) server."
         echo "  --post_install=<path>           Specify the post install script path."
         echo "  --screenshots=<url>             Set the screenshots API URL."
-        echo "  --swap=<2>                      Set space in GB to be allocated for SWAP."
+        echo "  --swap=<2>                      Set space (1-10) in GB to be allocated for SWAP."
         echo "  --debug                         Display debug information during installation."
         echo "  --enable-dev-mode               Enable dev_mode after installation."
         echo "  --repair OR --retry             Retry and overwrite everything."
@@ -473,17 +480,16 @@ detect_os_cpu_and_package_manager() {
 		        ;;
 		esac
 
-        # Locale-agnostic CPU architecture detection
         arch_raw="$(uname -m)"
         case "$arch_raw" in
             x86_64|amd64)
-                architecture="x86_64"   # 64-bit x86
+                architecture="x86_64"
                 ;;
             aarch64|arm64)
-                architecture="aarch64"  # 64-bit ARM
+                architecture="aarch64"
                 ;;
             *)
-                architecture="$arch_raw" # Fallback: keep raw value
+                architecture="$arch_raw"
                 ;;
         esac
     else
@@ -493,21 +499,20 @@ detect_os_cpu_and_package_manager() {
     fi
 }
 
-
 docker_compose_up(){
     echo "Setting docker-compose.."
     DOCKER_CONFIG=${DOCKER_CONFIG:-/root/.docker}
     mkdir -p $DOCKER_CONFIG/cli-plugins
 
     if [ "$architecture" == "aarch64" ]; then
-		link="https://github.com/docker/compose/releases/download/v2.36.0/docker-compose-linux-aarch64"
+		link="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-aarch64"
   	else
-   		link="https://github.com/docker/compose/releases/download/v2.36.0/docker-compose-linux-x86_64"
+   		link="https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64"
  	fi
 
 	    curl -4 -SL $link -o $DOCKER_CONFIG/cli-plugins/docker-compose  > /dev/null 2>&1
 	    debug_log chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
-		debug_log curl -4 -L "https://github.com/docker/compose/releases/download/v2.30.3/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
+		debug_log curl -4 -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
 		debug_log mv /usr/local/bin/docker-compose /usr/bin/docker-compose
   		ln -s /usr/bin/docker-compose /usr/local/bin/docker-compose
 		debug_log chmod +x /usr/bin/docker-compose
@@ -578,10 +583,6 @@ docker_compose_up(){
         docker --context default volume rm root_openadmin_mysql > /dev/null 2>&1    # delete database
     fi
 
-    if [ "$architecture" == "aarch64" ]; then
-    	sed -i 's/mysql\/mysql-server/mariadb:10-focal/' docker-compose.yml
-    fi
-
     cd /root && docker compose up -d openpanel_mysql > /dev/null 2>&1               # from 0.2.5 we only start mysql by default
 
     mysql_container=$(docker compose ps -q openpanel_mysql)
@@ -631,17 +632,17 @@ tweak_ssh(){
 
 setup_firewall_service() {
     if [ -z "$SKIP_FIREWALL" ]; then
-        echo "Installing ConfigServer Firewall & Security.."
+        echo "Installing Sentinel Firewall.."
 
         install_csf() {
-            wget --inet4-only https://raw.githubusercontent.com/stefanpejcic/sentinelfw/main/csf.tgz > /dev/null 2>&1
+            wget --inet4-only https://raw.githubusercontent.com/sentinelfirewall/sentinel/main/csf.tgz > /dev/null 2>&1
             debug_log tar -xzf csf.tgz
             rm csf.tgz
             cd csf
             sh install.sh > /dev/null 2>&1
             cd ..
             rm -rf csf
-            echo "Setting CSF auto-login from OpenAdmin interface.."
+            echo "Setting Sentinel UI auto-login from OpenAdmin interface.."
             if [ "$PACKAGE_MANAGER" == "dnf" ]; then
                 debug_log dnf install -y wget curl yum-utils policycoreutils-python-utils libwww-perl
                 # fixes bug when starting csf: Can't locate locale.pm in @INC (you may need to install the locale module)
@@ -650,7 +651,7 @@ setup_firewall_service() {
                 elif [ "$PACKAGE_MANAGER" == "apt-get" ]; then
                    debug_log apt-get install -y perl libwww-perl libgd-dev libgd-perl libgd-graph-perl
                 fi
-                timeout 60s git clone https://github.com/stefanpejcic/csfpost-docker.sh > /dev/null 2>&1
+                timeout 300s git clone https://github.com/stefanpejcic/csfpost-docker.sh > /dev/null 2>&1
                 mv csfpost-docker.sh/csfpost.sh /usr/local/csf/bin/csfpost.sh
                 chmod +x /usr/local/csf/bin/csfpost.sh
                 rm -rf csfpost-docker.sh
@@ -721,9 +722,9 @@ setup_firewall_service() {
 
 
         if command -v csf > /dev/null 2>&1; then
-            echo -e "[${GREEN} OK ${RESET}] ConfigServer Firewall is installed and configured."
+            echo -e "[${GREEN} OK ${RESET}] Sentinel Firewall is installed and configured."
         else
-            echo -e "[${RED} X  ${RESET}] ConfigServer Firewall is not installed properly."
+            echo -e "[${RED} X  ${RESET}] Sentinel Firewall is not installed properly."
         fi
     fi
 }
@@ -739,8 +740,7 @@ update_package_manager() {
 setup_imunifyav() {
     if [ "$IMUNIFY_AV" = true ]; then
         echo "Installing ImunifyAV"
-        debug_log opencli imunify install
-        debug_log opencli imunify start
+        debug_log opencli imunify install && opencli imunify start
     fi
 }
 
@@ -787,11 +787,11 @@ create_rdnc() {
 
 extra_step_on_hetzner() {
 	if [ -f /etc/hetzner-build ]; then
-	    echo "Hetzner provider detected, adding Google DNS resolvers..."
+	    echo "Hetzner provider detected, adding Cloudflare DNS resolvers..."
 	    echo "info: https://github.com/stefanpejcic/OpenPanel/issues/471"
 	    mv /etc/resolv.conf /etc/resolv.conf.bak
-	    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
-	    echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+	    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+	    echo "nameserver 1.0.0.1" >> /etc/resolv.conf
 	fi
 }
 
@@ -853,8 +853,9 @@ install_packages() {
                           "jc" "jq" "sqlite3")
             fi
 
-            debug_log sed -i 's/#$nrconf{restart} = '"'"'i'"'"';/$nrconf{restart} = '"'"'a'"'"';/g' \
-                      /etc/needrestart/needrestart.conf
+			if [ -f /etc/needrestart/needrestart.conf ]; then
+	            debug_log sed -i 's/#$nrconf{restart} = '"'"'i'"'"';/$nrconf{restart} = '"'"'a'"'"';/g' /etc/needrestart/needrestart.conf
+			fi
             debug_log $PACKAGE_MANAGER -qq install apt-transport-https ca-certificates -y
             echo "APT::Acquire::Retries \"3\";" > /etc/apt/apt.conf.d/80-retries
             debug_log update-ca-certificates
@@ -923,9 +924,19 @@ install_packages() {
 					}	
   
 				else
-					$PACKAGE_MANAGER install -y "$package" || {
-						radovan 1 "ERROR: Installation failed. Please retry installation with '--repair' flag."
-					}
+				  local MAX_RETRIES=10
+				  local RETRY_DELAY=30
+				  local attempt=1
+				
+				  until $PACKAGE_MANAGER install -y "$package"; do
+				      echo "⚠️  Attempt $attempt/$MAX_RETRIES to install '$package' failed."
+				      if [ "$attempt" -ge "$MAX_RETRIES" ]; then
+				          radovan 1 "ERROR: Installation failed after $MAX_RETRIES attempts. Please retry installation with '--repair' flag."
+				      fi
+				      echo "Retrying in $RETRY_DELAY seconds..."
+				      sleep $RETRY_DELAY
+				      ((attempt++))
+				  done
 				fi
              }
         else
@@ -1018,7 +1029,7 @@ opencli_setup(){
     echo "Downloading OpenCLI and adding to path.."
     cd /usr/local
 	[ "$REPAIR" = true ] && rm -rf /usr/local/opencli
-    timeout 60s git clone https://github.com/stefanpejcic/opencli.git
+    timeout 300s git clone https://github.com/stefanpejcic/opencli.git
 
 	if [ ! -d "/usr/local/opencli" ]; then
 	 	radovan 1 "Failed to clone OpenCLI from Github - please retry install with '--retry --debug' flags."
@@ -1051,6 +1062,7 @@ opencli_setup(){
 enable_dev_mode() {
 	if [ "$DEV_MODE" = true ]; then
 	    echo "Enabling dev_mode"
+		# https://gist.github.com/stefanpejcic/9c2b7313c052ce5fdb2ab816f52ff08b?permalink_comment_id=5835702#gistcomment-5835702
 	    opencli config update dev_mode "on" > /dev/null 2>&1
 	fi
 }
@@ -1187,7 +1199,7 @@ download_skeleton_directory_from_github() {
 	[ "$REPAIR" = true ] && rm -rf "$ETC_DIR"
 
     echo "Downloading configuration files to ${ETC_DIR}..."
-    timeout 60s git clone "$repo_url" "$ETC_DIR" >/dev/null 2>&1 || \
+    timeout 300s git clone "$repo_url" "$ETC_DIR" >/dev/null 2>&1 || \
         radovan 1 "Failed to clone OpenPanel Configuration from GitHub - retry with '--retry --debug'."
 
     [ -f "$CONFIG_FILE" ] || radovan 1 "Main configuration file ${CONFIG_FILE} is missing."
@@ -1234,6 +1246,25 @@ rm_helpers(){
 
 setup_swap(){
 
+	validate_size() {
+	    if ! [[ "$SWAP_FILE" =~ ^[0-9]+$ ]] || [ "$SWAP_FILE" -lt 1 ] || [ "$SWAP_FILE" -gt 10 ]; then
+	        echo "Warning: Invalid swap size provided: '${SWAP_FILE}'. Must be a at least 1 and a maximum of 10 GB. Default will be used instead."
+			auto_setup_swap_size
+	    fi
+	}
+
+
+	auto_setup_swap_size() {
+		memory_kb=$(grep 'MemTotal' /proc/meminfo | awk '{print $2}')
+		memory_gb=$(awk "BEGIN {print $memory_kb/1024/1024}")
+
+		if [ $(awk "BEGIN {print ($memory_gb < 8)}") -eq 1 ]; then
+			create_swap
+		else
+			echo "Total available memory is ${memory_gb}GB, skipping creating swap file."
+		fi
+	}
+
     create_swap() {
         fallocate -l ${SWAP_FILE}G /swapfile > /dev/null 2>&1
         chmod 600 /swapfile
@@ -1250,16 +1281,10 @@ setup_swap(){
     fi
 
     if [ "$SETUP_SWAP_ANYWAY" = true ]; then
+		validate_size
         create_swap
     else
-        memory_kb=$(grep 'MemTotal' /proc/meminfo | awk '{print $2}')
-        memory_gb=$(awk "BEGIN {print $memory_kb/1024/1024}")
-
-        if [ $(awk "BEGIN {print ($memory_gb < 8)}") -eq 1 ]; then
-            create_swap
-        else
-            echo "Total available memory is ${memory_gb}GB, skipping creating swap file."
-        fi
+		auto_setup_swap_size
     fi
 }
 
@@ -1459,7 +1484,7 @@ configure_coraza() {
 		debug_log mkdir -p /etc/openpanel/caddy/
 		debug_log wget --inet4-only https://raw.githubusercontent.com/corazawaf/coraza/v3/dev/coraza.conf-recommended -O /etc/openpanel/caddy/coraza_rules.conf
   		[ "$REPAIR" = true ] && rm -rf /etc/openpanel/caddy/coreruleset/
-		debug_log timeout 60s git clone https://github.com/coreruleset/coreruleset /etc/openpanel/caddy/coreruleset/
+		debug_log timeout 300s git clone https://github.com/coreruleset/coreruleset /etc/openpanel/caddy/coreruleset/
 	else
  		echo "Disabling CorazaWAF: setting caddy:latest docker image instead of openpanel/caddy-coraza"
 		sed -i 's|image: .*caddy.*|image: caddy:latest|' /root/docker-compose.yml
@@ -1479,7 +1504,7 @@ install_openadmin(){
     local branch="110"
     [ "$architecture" = "aarch64" ] && branch="armcpu"
 
-    timeout 60s git clone -b "$branch" --single-branch https://github.com/stefanpejcic/openadmin "$openadmin_dir" || {
+    timeout 300s git clone -b "$branch" --single-branch https://github.com/stefanpejcic/openadmin "$openadmin_dir" || {
         radovan 1 "Failed to clone OpenAdmin from Github - please retry install with '--retry --debug' flags."
     }
 
@@ -1544,10 +1569,10 @@ create_admin_and_show_logins_success_message() {
     fi
 
 	if [ "$SET_ADMIN_PASSWORD" = true ]; then
-	    if [[ "$custom_password" =~ ^[A-Za-z0-9]{5,16}$ ]]; then
+	    if [[ "$custom_password" =~ ^[A-Za-z0-9]{5,30}$ ]]; then
 	        new_password="${custom_password}"
 	    else
-	        echo "Warning: provided password is invalid (must be alphanumeric and 5–16 characters). Generating a secure password."
+	        echo "Warning: provided password is invalid (must be alphanumeric and 5–30 characters). Generating a secure password."
 	        new_password=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 16)
 	    fi
 	else
@@ -1594,7 +1619,7 @@ create_admin_and_show_logins_success_message() {
 
 
 # ======================================================================
-# Main program
+# main
 
 (
 flock -n 200 || { echo "Error: Another instance of the install script is already running. Exiting."; exit 1; }
@@ -1616,3 +1641,7 @@ send_install_log
 create_admin_and_show_logins_success_message
 run_custom_postinstall_script
 )200>/root/openpanel_install.lock
+
+if [[ -f /root/openpanel_install.lock ]]; then
+  rm -f /root/openpanel_install.lock
+fi

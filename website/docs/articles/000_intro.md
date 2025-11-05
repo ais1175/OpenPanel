@@ -26,13 +26,20 @@ sidebar_position: 1
 - [Connecting to MySQL Server from Applications in OpenPanel](/docs/articles/databases/how-to-connect-to-mysql-from-php-applications-in-openpanel/)
 - [How to set or increase PHP INI memory_limit or other values?](/docs/articles/websites/how-to-set-or-increase-PHP-INI-memory-limit-or-other-values/)
 - [403 Error Troubleshooting Guide](/docs/articles/domains/error-on-website-disable-coraza-waf/)
+- [404 Error Troubleshooting Guide](/docs/articles/domains/not-found-404-error-troubleshooting)
+- [502 Error Troubleshooting Guide](/docs/articles/domains/bad-gateway-502-error-troubleshooting)
+- [504 Error Troubleshooting Guide](/docs/articles/domains/gateway-timeout-504-error-troubleshooting)
+- [WordPress Themes and Plugins Sets](/docs/articles/websites/wordpress-plugins-themes-sets-in-openpanel)
 - [Configure Apache, Nginx, OpenLitespeed per user](/docs/articles/docker/how-to-set-nginx-apache-varnish-per-user-in-openpanel/)
+- [Purging Varnish Cache for a Website](/docs/articles/websites/purge-varnish-cache-from-terminal/)
 - [WordPress HTTPS behind Varnish Cache](/docs/articles/docker/https-wordpress-behind-varnish-proxy/)
 
 # Databases
 - [Configure MySQL, MariaDB or Percona per user](/docs/articles/docker/how-to-set-mysql-mariadb-per-user-in-openpanel/)
+- [Set Custom Domain for phpMyAdmin](/docs/articles/databases/phpmyadmin-domain/)
 - [Import MySQL Database](/docs/articles/docker/import-database)
 - [Use `mysql` or `mariadb` as DB_HOST instead of *localhost*](/docs/articles/databases/how-to-connect-to-mysql-from-php-applications-in-openpanel/)
+- [Troubleshooting: Error establishing a database connection](/docs/articles/databases/how-to-troubleshoot-error-establishing-a-database-connection/)
 
 # Configuration
 - [Branding and White-Label](/docs/articles/dev-experience/customizing-openpanel-user-interface/)
@@ -49,6 +56,8 @@ sidebar_position: 1
 - [How to configure Nameservers](/docs/articles/domains/how-to-configure-nameservers-in-openpanel)
 - [How to configure a DNS Cluster](/docs/articles/domains/how-to-setup-dns-cluster-in-openpanel)
 - [Troubleshooting DNS](/docs/articles/domains/troubleshooting-dns)
+- [Troubleshooting Caddy Webserver](/docs/articles/docker/troubleshooting-caddy-webserver)
+
 
 # Files
 - [How to configure FTP server](/docs/articles/user-experience/how-to-setup-ftp-in-openpanel/)
@@ -82,6 +91,7 @@ sidebar_position: 1
 - [Skip a specific version](/docs/articles/install-update/skip-specific-openpanel-version-update/)
 
 # Advanced
+- [Set Default User Locale](/docs/articles/accounts/default-user-locales/)
 - [Configure unlimited CPU and Memory for user](/docs/articles/docker/how-to-remove-resource-limits-for-user-service-containers/)
 - [Auto-start Services](/docs/articles/dev-experience/autostart-services/)
 - [Restricted Usernames for services](/docs/articles/accounts/forbidden-usernames/)

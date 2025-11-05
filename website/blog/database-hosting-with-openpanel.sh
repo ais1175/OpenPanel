@@ -1,5 +1,5 @@
 ---
-title: Effortless Database Hosting with OpenPanel
+title: Database Only Hosting with OpenPanel
 description: How to setup Database-only Hosting plans with OpenPanel Enterprise edition
 slug: database-hosting-with-openpanel
 authors: radovan
@@ -29,7 +29,6 @@ Go to **OpenAdmin > Settings > Modules** and enable:
 - **MySQL** – Core database management  
 - **phpMyAdmin** – Web-based database management (optional, advanced users)  
 - **Remote MySQL** – Secure external access to databases (optional)  
-- **File Manager** – Optional for SQL file uploads/imports  
 - **Docker / Terminal** – Optional for advanced imports (>1GB SQL dumps)  
 
 ---
@@ -44,7 +43,6 @@ Create a new feature set for database-only hosting:
    - MySQL  
    - phpMyAdmin (optional)  
    - Remote MySQL (optional)  
-   - File Manager (optional)  
 
 This ensures database users only get access to the tools they need.  
 
@@ -72,6 +70,7 @@ Example plans:
 Accounts can be created via **OpenAdmin**, the **terminal**, or third-party billing systems like WHMCS/FOSSBilling.  
 Each user gets an isolated container running their MySQL/MariaDB service with secure credentials.
 
+You can set different servers: MySQL, Percona or MariaDB and also different versions per user.
 ---
 
 ## Key Features of Database Hosting Plans
@@ -154,8 +153,7 @@ OpenPanel integrates **phpMyAdmin** for advanced database management:
 Users can import `.sql` backups using:
 
 1. **phpMyAdmin** (upload/import file)  
-2. **File Manager + phpMyAdmin** (upload first, then import)  
-3. **Docker Terminal** (for >1GB dumps with `mysql < file.sql`)  
+2. **Import Database** option
 
 ---
 

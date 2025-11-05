@@ -21,7 +21,9 @@ const siteConfig = {
     organizationName: "stefanpejcic",
     trailingSlash: true,
     favicon: "img/favicon.svg",
-    scripts: ["https://platform.twitter.com/widgets.js"],
+    scripts: [
+      'https://platform.twitter.com/widgets.js',
+    ],
     presets: [
         [
             "@docusaurus/preset-classic",

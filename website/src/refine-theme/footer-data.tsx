@@ -40,9 +40,18 @@ export const menuItems = [
         label: "Product",
         items: [
             {
+                label: "Compare editions",
+                href: "/enterprise/#compare",
+            },
+            {
+                label: "NOC Pricing",
+                icon: <NewBadgeIcon />,
+                href: "/licenses-for-partners",
+            },
+            {
                 label: "Features",
                 href: "/features",
-            },
+            },            
             {
                 label: "Live Preview",
                 href: "/demo",
@@ -58,15 +67,36 @@ export const menuItems = [
         ],
     },
     {
-        label: "About",
+        label: "Compare",
         items: [
+            {
+                label: "cPanel VS OpenPanel",
+                icon: <NewBadgeIcon />,
+                href: "/cpanel-alternative",
+            },
+            {
+                label: "Plesk VS OpenPanel",
+                href: "/plesk-alternative",
+            },
+            {
+                label: "CyberPanel VS OpenPanel",
+                href: "/cyberpanel-alternative",
+            },
+        ],
+    },    
+    {
+        label: "Company",
+        items: [
+            {
+                label: "About",
+                href: "/about",
+            },
             {
                 label: "Blog",
                 href: "/blog",
             },
             {
                 label: "Statistics",
-                icon: <NewBadgeIcon />,
                 href: "/statistics",
             },            
             {
