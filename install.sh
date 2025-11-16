@@ -10,7 +10,7 @@
 # Usage:                   bash <(curl -sSL https://openpanel.org)
 # Author:                  Stefan Pejcic <stefan@pejcic.rs>
 # Created:                 11.07.2023
-# Last Modified:           29.10.2025
+# Last Modified:           1.11.2025
 #
 ################################################################################
 
@@ -43,7 +43,7 @@ SET_PREMIUM=false                                                     # added in
 SET_ADMIN_USERNAME=false                                              # random
 SET_ADMIN_PASSWORD=false                                              # random
 SCREENSHOTS_API_URL="http://screenshots-v2.openpanel.com/api/screenshot" # default since 0.5.9
-readonly DEFAULT_PANEL_VERSION="1.6.6"                                # https://github.com/stefanpejcic/OpenPanel/blob/a383bbfcdffdcf052136a3ae79554b68012f4b69/.github/workflows/update-version.yml#L49
+readonly DEFAULT_PANEL_VERSION="1.6.9"                                # https://github.com/stefanpejcic/OpenPanel/blob/a383bbfcdffdcf052136a3ae79554b68012f4b69/.github/workflows/update-version.yml#L49
 readonly DOCKER_COMPOSE_VERSION="v2.40.2"                             # https://github.com/docker/compose/releases
 DEV_MODE=false
 post_install_path=""                                                  # not to run
@@ -148,7 +148,7 @@ get_server_ipv4() {
     local ip
 
     for url in "${services[@]}"; do
-        ip=$(curl -s --max-time 2 -4 "$url" || wget -qO- --timeout=2 --inet4-only "$url")
+        ip=$(curl -s --max-time 1 -4 "$url" || wget --timeout=1 --tries=1 -qO- --inet4-only "$url")
         [ -n "$ip" ] && break
     done
 
@@ -190,7 +190,7 @@ setup_progress_bar_script(){
 	PROGRESS_BAR_FILE="progress_bar.sh"
 
 	if command -v wget &> /dev/null; then
-	    wget --timeout=5 --inet4-only "$PROGRESS_BAR_URL" -O "$PROGRESS_BAR_FILE" > /dev/null 2>&1
+	    wget --timeout=5 --tries=3 --inet4-only "$PROGRESS_BAR_URL" -O "$PROGRESS_BAR_FILE" > /dev/null 2>&1
 	    if [ $? -ne 0 ]; then
 	        echo "ERROR: wget failed or timed out after 5 seconds while downloading from github"
 	 	echo "repeat with --debug flag to see where errored."
@@ -635,7 +635,7 @@ setup_firewall_service() {
         echo "Installing Sentinel Firewall.."
 
         install_csf() {
-            wget --inet4-only https://raw.githubusercontent.com/sentinelfirewall/sentinel/main/csf.tgz > /dev/null 2>&1
+            wget --timeout=3 --tries=3 --inet4-only https://raw.githubusercontent.com/sentinelfirewall/sentinel/main/csf.tgz > /dev/null 2>&1
             debug_log tar -xzf csf.tgz
             rm csf.tgz
             cd csf
@@ -648,14 +648,14 @@ setup_firewall_service() {
                 # fixes bug when starting csf: Can't locate locale.pm in @INC (you may need to install the locale module)
                 if [ -f /etc/fedora-release ]; then
                     debug_log yum --allowerasing install perl -y
-                elif [ "$PACKAGE_MANAGER" == "apt-get" ]; then
+				fi
+            elif [ "$PACKAGE_MANAGER" == "apt-get" ]; then
                    debug_log apt-get install -y perl libwww-perl libgd-dev libgd-perl libgd-graph-perl
-                fi
-                timeout 300s git clone https://github.com/stefanpejcic/csfpost-docker.sh > /dev/null 2>&1
-                mv csfpost-docker.sh/csfpost.sh /usr/local/csf/bin/csfpost.sh
-                chmod +x /usr/local/csf/bin/csfpost.sh
-                rm -rf csfpost-docker.sh
             fi
+			timeout 300s git clone https://github.com/stefanpejcic/csfpost-docker.sh > /dev/null 2>&1
+			mv csfpost-docker.sh/csfpost.sh /usr/local/csf/bin/csfpost.sh
+			chmod +x /usr/local/csf/bin/csfpost.sh
+			rm -rf csfpost-docker.sh		
         }
 
         open_csf_port() {
@@ -1482,7 +1482,7 @@ configure_coraza() {
 	if [ "$CORAZA" = true ]; then
 		echo "Installing CorazaWAF and setting OWASP core ruleset.."
 		debug_log mkdir -p /etc/openpanel/caddy/
-		debug_log wget --inet4-only https://raw.githubusercontent.com/corazawaf/coraza/v3/dev/coraza.conf-recommended -O /etc/openpanel/caddy/coraza_rules.conf
+		debug_log wget --timeout=15 --tries=3 --inet4-only https://raw.githubusercontent.com/corazawaf/coraza/v3/dev/coraza.conf-recommended -O /etc/openpanel/caddy/coraza_rules.conf
   		[ "$REPAIR" = true ] && rm -rf /etc/openpanel/caddy/coreruleset/
 		debug_log timeout 300s git clone https://github.com/coreruleset/coreruleset /etc/openpanel/caddy/coreruleset/
 	else
@@ -1557,7 +1557,7 @@ create_admin_and_show_logins_success_message() {
     if [ "$SET_ADMIN_USERNAME" = true ]; then
        new_username="${custom_username}"
     else
-       wget --inet4-only -O /tmp/generate.sh https://gist.githubusercontent.com/stefanpejcic/905b7880d342438e9a2d2ffed799c8c6/raw/a1cdd0d2f7b28f4e9c3198e14539c4ebb9249910/random_username_generator_docker.sh > /dev/null 2>&1
+       wget --inet4-only --timeout=3 --tries=2 -O /tmp/generate.sh https://gist.githubusercontent.com/stefanpejcic/905b7880d342438e9a2d2ffed799c8c6/raw/a1cdd0d2f7b28f4e9c3198e14539c4ebb9249910/random_username_generator_docker.sh > /dev/null 2>&1
 
        if [ -f "/tmp/generate.sh" ]; then
 	       source /tmp/generate.sh
