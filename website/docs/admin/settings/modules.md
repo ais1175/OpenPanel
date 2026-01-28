@@ -276,6 +276,34 @@ Customize options:
 
 
 
+## Temporary Links
+
+The **`temporary_links`** module allows users to test their websites using temporary subdomains (links are valid for 15 minutes).
+
+When enabled:
+* Users can access the [**Live Preview** button on the Site Manager](/docs/panel/applications/wordpress/#temporary-link).
+
+When disabled:
+* Users can not access the *Live Preview* button on the Site Manager page.
+
+Customize options:
+* To **self-host a proxy service** - refer to [How-to Guides > Temporary Links API](/docs/articles/dev-experience/selfhosted-temporary-links-api/).
+* To **configure a custom domain** - update the [`temporary_links` option](https://dev.openpanel.com/cli/config.html#temporary-links).
+
+## Login History
+
+The **`login_history`** module allows users to view login history for their account.
+
+When enabled:
+* Users can access the [**Account > Login History** page](/docs/panel/account/login_history/).
+
+When disabled:
+* Users can not access the *Account > Login History* page.
+
+Customize options:
+* To **control number of logins stored per user** edit 'Login records to keep per user' setting from [OpenAdmin > Settings > OpenPanel](/docs/admin/settings/openpanel/#Statistics).
+
+
 ## 2FA
 
 The **`twofa`** module allows users to enable 2 factor authentication for their account.
@@ -305,4 +333,80 @@ Customize options:
 * To **set total number of lines per user** edit `activity_lines_retention` setting.
 * To **set total size of log per user** edit `activity_max_size_bytes` setting.
 * To **log actions from 3rd-party plugin** refer to: [*How to log actions from Custom Plugins in user Activity Log*](https://community.openpanel.org/d/218-how-to-log-actions-from-custom-plugins-in-user-activity-log)
+
+
+
+
+## Services
+
+The **`services`** module allows users to enable/disable services without the Docker module.
+
+When enabled:
+* Users can access the [**Advanced > Services** page](/docs/panel/advanced/services/).
+* Users can enable/disable services.
+* User view current service status, resource usage (CPU%, Memory%, Disk I/O, PIDs..), container name (to be used to connect to service from other containers).
+* Users can view logs for services.
+
+When disabled:
+* Users do not have access to the *Advanced > Services* page.
+
+
+## Memcached
+
+The **`memcached`** module allows users to enable/disable Memcached service.
+
+When enabled:
+* Users can access the [**Caching > Memcached** page](/docs/panel/caching/memcached/).
+* Users can enable/disable Memcached service.
+* User can connect to the instance from other containers using: `elasticsearch:11211`
+* Users can view logs for the Memcached service.
+
+When disabled:
+* Users do not have access to the *Caching > Memcached* page.
+
+## Redis
+
+The **`redis`** module allows users to enable/disable Redis service.
+
+When enabled:
+* Users can access the [**Caching > Redis** page](/docs/panel/caching/redis/).
+* Users can enable/disable Memcached service.
+* User can connect to the instance from other containers using: `redis:6379`
+* Users can view logs for the Redis service.
+
+When disabled:
+* Users do not have access to the *Caching > Redis* page.
+
+
+## ElasticSearch
+
+The **`elasticsearch`** module allows users to enable/disable ElasticSearch service.
+
+When enabled:
+* Users can access the [**Caching > ElasticSearch** page](/docs/panel/caching/elasticsearch/).
+* Users can enable/disable ElasticSearch service.
+* User can connect to the instance from other containers using: `elasticsearch:9200`
+* Users can view logs for the ElasticSearch service.
+
+When disabled:
+* Users do not have access to the *Caching > ElasticSearch* page.
+
+
+
+## OpenSearch
+
+The **`opensearch`** module allows users to enable/disable OpenSearch service.
+
+When enabled:
+* Users can access the [**Caching > OpenSearch** page](/docs/panel/caching/opensearch/).
+* Users can enable/disable OpenSearch service.
+* User can connect to the instance from other containers using: `opensearch:9200`
+* Users can view logs for the OpenSearch service.
+
+When disabled:
+* Users do not have access to the *Caching > OpenSearch* page.
+
+
+
+
 

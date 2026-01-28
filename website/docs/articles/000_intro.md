@@ -23,6 +23,7 @@ sidebar_position: 1
 - [How to Install WordPress® With OpenPanel](/docs/articles/websites/how-to-install-wordpress-with-openpanel/)
 - [Hosting a PHP Website with OpenPanel](/docs/articles/websites/hosting-a-php-website-with-openpanel/)
 - [How to Migrate a WordPress® Installation to OpenPanel](/docs/articles/websites/how-to-upload-wordpress-website-to-openpanel)
+- [How to install a PHP extension in OpenPanel](/docs/articles/websites/how-to-install-php-extensions-in-openpanel)
 - [Connecting to MySQL Server from Applications in OpenPanel](/docs/articles/databases/how-to-connect-to-mysql-from-php-applications-in-openpanel/)
 - [How to set or increase PHP INI memory_limit or other values?](/docs/articles/websites/how-to-set-or-increase-PHP-INI-memory-limit-or-other-values/)
 - [403 Error Troubleshooting Guide](/docs/articles/domains/error-on-website-disable-coraza-waf/)
@@ -49,6 +50,7 @@ sidebar_position: 1
 # Enterprise
 - [OpenPanel Pricing](/docs/articles/license/pricing/)
 - [Upgrading to OpenPanel Enterprise and activating License](/docs/articles/license/upgrade_to_openpanel_enterprise_and-activate_license/)
+- [Downgrading from OpenPanel Enterprise to Community edition](/docs/articles/license/how_to_downgrade_openpanel_license/)
 - [Licenses for educational or non-profit organizations](/docs/articles/license/openpanel_enterprise_for_nonprofits/)
 
 # Domains
@@ -67,6 +69,8 @@ sidebar_position: 1
 - [Configuring ImunifyAV](/docs/articles/security/setup-imunifyav/)
 - [Rate-limiting access to OpenPanel or OpenAdmin](/docs/articles/dev-experience/rate_limiting_for_openpanel/)
 - [Restrict access to OpenAdmin](/docs/articles/dev-experience/limit_access_to_openadmin/)
+- [Disable the Terminal feature in OpenAdmin](/docs/articles/dev-experience/disable-openadmin-web-terminal/)
+- [Disable the Server Reboot feature in OpenAdmin](/docs/articles/dev-experience/disable-openadmin-server-reboot/)
 - [Limiting Connections with CSF](/docs/articles/security/how-to-limit-connections-csf)
 - [CSF Blocklists](/docs/articles/security/csf-blocklists/)
 

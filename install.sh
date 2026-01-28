@@ -10,7 +10,7 @@
 # Usage:                   bash <(curl -sSL https://openpanel.org)
 # Author:                  Stefan Pejcic <stefan@pejcic.rs>
 # Created:                 11.07.2023
-# Last Modified:           1.11.2025
+# Last Modified:           01.01.2026
 #
 ################################################################################
 
@@ -22,31 +22,30 @@ GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
 RESET='\033[0m'
-export TERM=xterm-256color                                            # bug fix: tput: No value for $TERM and no -T specified
+export TERM=xterm-256color                                               # bug fix: tput: No value for $TERM and no -T specified
 export DEBIAN_FRONTEND=noninteractive
 # ======================================================================
 # Defaults for environment variables
-CUSTOM_VERSION=false                                                  # default version is latest
-DEBUG=false                                                           # verbose output for debugging failed install
-SKIP_APT_UPDATE=false                                                 # they are auto-pulled on account creation
+CUSTOM_VERSION=false                                                     # default version is latest
+DEBUG=false                                                              # verbose output for debugging failed install
+SKIP_APT_UPDATE=false                                                    # they are auto-pulled on account creation
 SKIP_DNS_SERVER=false
 REPAIR=false
-LOCALES=true                                                          # only en
-NO_SSH=false                                                          # deny port 22
-SET_HOSTNAME_NOW=false                                                # must be a FQDN
-SETUP_SWAP_ANYWAY=false                                               # setup swapfile regardless of server ram
-CORAZA=true                                                           # install CorazaWAF, unless user provices --no-waf flag
-IMUNIFY_AV=false                                                      # https://community.openpanel.org/d/193-dont-install-imunifyav-by-default
-SWAP_FILE="1"                                                         # calculated based on ram
-SEND_EMAIL_AFTER_INSTALL=false                                        # send admin logins to specified email
-SET_PREMIUM=false                                                     # added in 0.2.1
-SET_ADMIN_USERNAME=false                                              # random
-SET_ADMIN_PASSWORD=false                                              # random
-SCREENSHOTS_API_URL="http://screenshots-v2.openpanel.com/api/screenshot" # default since 0.5.9
-readonly DEFAULT_PANEL_VERSION="1.6.9"                                # https://github.com/stefanpejcic/OpenPanel/blob/a383bbfcdffdcf052136a3ae79554b68012f4b69/.github/workflows/update-version.yml#L49
-readonly DOCKER_COMPOSE_VERSION="v2.40.2"                             # https://github.com/docker/compose/releases
+LOCALES=false                                                            # by default only EN is installed
+SET_HOSTNAME_NOW=false                                                   # must be a FQDN
+SETUP_SWAP_ANYWAY=false                                                  # setup swapfile regardless of server ram
+CORAZA=true                                                              # install CorazaWAF, unless user provices --no-waf flag
+IMUNIFY_AV=false                                                         # https://community.openpanel.org/d/193-dont-install-imunifyav-by-default
+SWAP_FILE="1"                                                            # calculated based on ram
+SEND_EMAIL_AFTER_INSTALL=false                                           # send admin logins to specified email
+SET_PREMIUM=false                                                        # added in 0.2.1
+SET_ADMIN_USERNAME=false                                                 # random
+SET_ADMIN_PASSWORD=false                                                 # random
+SCREENSHOTS_API_URL="http://screenshots-$(printf 'v2\nv3\nv4\nv6' | shuf -n1).openpanel.com/api/screenshot" # spread the load
+readonly DEFAULT_PANEL_VERSION="1.7.4"                                   # https://github.com/stefanpejcic/OpenPanel/blob/a383bbfcdffdcf052136a3ae79554b68012f4b69/.github/workflows/update-version.yml#L49
+readonly DOCKER_COMPOSE_VERSION="v2.40.2"                                # https://github.com/docker/compose/releases
 DEV_MODE=false
-post_install_path=""                                                  # not to run
+post_install_path=""                                                     #
 # ======================================================================
 # PATHs used throughout the script
 readonly ETC_DIR="/etc/openpanel/"                                             # https://github.com/stefanpejcic/openpanel-configuration
@@ -84,9 +83,9 @@ install_started_message(){
     fi
     if [ "$SET_ADMIN_USERNAME" = true ]; then
         if [ "$SET_ADMIN_PASSWORD" = true ]; then
-		echo -e "- Create an admin account $custom_username with password $custom_password for you."
+		echo -e "- Create an admin account ${custom_username} with password ${custom_password} for you."
 	else
-		echo -e "- Create an admin account $custom_username with a strong random password for you."
+		echo -e "- Create an admin account ${custom_username} with a strong random password for you."
   	fi
     else
 		echo -e "- Create an admin account with random username and strong password for you."
@@ -165,7 +164,7 @@ get_server_ipv4() {
 
 set_version_to_install() {
     if [ "$CUSTOM_VERSION" = false ]; then
-        response=$(curl -4 -s "https://usage-api.openpanel.org/latest_version")
+        response=$(curl -4 -s "https://usage-api.openpanel.org/")
 
         if command -v jq &> /dev/null; then
             PANEL_VERSION=$(echo "$response" | jq -r '.latest_version')
@@ -230,7 +229,10 @@ display_what_will_be_installed(){
   	echo ""
 }
 
-
+start_user_panel() {
+   # just to avoid 'why user panel not working questions'
+   nohup sh -c "cd /root && docker compose up -d openpanel" </dev/null >nohup.out 2>nohup.err &
+}
 
 
 # ======================================================================
@@ -256,7 +258,7 @@ docker_compose_up                         #
 docker_cpu_limiting                       # https://docs.docker.com/engine/security/rootless/#limiting-resources
 set_premium_features                      # must be after docker_compose_up
 configure_coraza                          # download corazawaf coreruleset or change docker image
-extra_step_for_caddy                      # so that webmail domain works without any setups!
+extra_steps_for_caddy                     # so that webmail domain works without any setups!
 enable_dev_mode                           # https://dev.openpanel.com/cli/config.html#dev-mode
 set_custom_hostname                       # set hostname if provided
 generate_and_set_ssl_for_panels           # if FQDN then lets setup https
@@ -270,6 +272,7 @@ setup_imunifyav                           # setum imunifyav and enable autologin
 setup_swap                                # swap space
 clean_apt_and_dnf_cache                   # clear
 verify_license                            # ping our server
+start_user_panel
 )
 
 
@@ -348,8 +351,8 @@ parse_args() {
         echo "Available options:"
         echo "  --key=<key_here>                Set the license key for OpenPanel Enterprise edition."
         echo "  --domain=<domain>               Set the server hostname and domain for accessing panel."
-        echo "  --username=<username>           Set Admin username - random generated if not provided."
-        echo "  --password=<password>           Set Admin Password - random generated if not provided."
+        echo "  --username='<username>'         Set Admin username - random generated if not provided."
+        echo "  --password='<password>'         Set Admin Password - random generated if not provided."
         echo "  --version=<version>             Set a custom OpenPanel version to be installed."
         echo "  --email=<stefan@example.net>    Set email address to receive email with admin credentials and future notifications."
         echo "  --imunifyav                     Install and setup ImunifyAV."
@@ -358,9 +361,8 @@ parse_args() {
         echo "  --skip-apt-update               Skip the APT update."
         echo "  --skip-firewall                 Skip installing Sentinel Firewall - Only do this if you will set another external firewall!"
         echo "  --no-waf                        Do not configure CorazaWAF with OWASP Coreruleset."
-        echo "  --no-ssh                        Disable port 22 and whitelist the IP address of user installing the panel."
         echo "  --skip-dns-server               Skip setup for DNS (Bind9) server."
-        echo "  --post_install=<path>           Specify the post install script path."
+        echo "  --post_install='<path>'         Specify the post install script path."
         echo "  --screenshots=<url>             Set the screenshots API URL."
         echo "  --swap=<2>                      Set space (1-10) in GB to be allocated for SWAP."
         echo "  --debug                         Display debug information during installation."
@@ -385,7 +387,7 @@ while [[ $# -gt 0 ]]; do
                 --key)         SET_PREMIUM=true;          license_key="$val" ;;
                 --domain)      SET_HOSTNAME_NOW=true;     new_hostname="$val" ;;
                 --username)    SET_ADMIN_USERNAME=true;   custom_username="$val" ;;
-                --password)    SET_ADMIN_PASSWORD=true;   custom_password="$val" ;;
+                --password)    SET_ADMIN_PASSWORD=true;   custom_password="${val}" ;;
                 --post_install) post_install_path="$val" ;;
                 --screenshots) SCREENSHOTS_API_URL="$val" ;;
                 --version)     CUSTOM_VERSION=true;       PANEL_VERSION="$val" ;;
@@ -401,7 +403,6 @@ while [[ $# -gt 0 ]]; do
         --imunifyav)      IMUNIFY_AV=true ;;
         --no-waf)              CORAZA=false ;;
         --debug)               DEBUG=true ;;
-        --no-ssh)              NO_SSH=true ;;
         --repair|--retry)
             REPAIR=true
             SKIP_PANEL_CHECK=true
@@ -499,6 +500,15 @@ detect_os_cpu_and_package_manager() {
     fi
 }
 
+
+# TODO
+setup_locales() {
+    if [ "$LOCALES" = true ]; then
+		# https://github.com/stefanpejcic/openpanel-translations/tree/main
+		opencli locale de-de fr-fr es-es ne-np pt-br uk-ua ru-ru tr-tr zh-cn 
+	fi
+}
+
 docker_compose_up(){
     echo "Setting docker-compose.."
     DOCKER_CONFIG=${DOCKER_CONFIG:-/root/.docker}
@@ -573,7 +583,18 @@ docker_compose_up(){
         echo "mysql/mysql-server docker image has known issues on AlmaLinux - editing docker compose to use the mysql:latest instead"
     elif [ "$os_name" == "debian" ]; then
     	echo "Setting AppArmor profiles for Debian"
-   		apt install apparmor -y   > /dev/null 2>&1
+   		apt install apparmor apparmor-utils -y   > /dev/null 2>&1
+		# Error response from daemon: client version 1.41 is too old. Minimum supported API version is 1.44, please upgrade your client to a newer version
+		# workaround for https://community.openpanel.org/d/233-docker-compose-error-client-version-141-is-too-old-on-debian-12
+		# grep -qxF 'export DOCKER_API_VERSION=1.44' ~/.bashrc || echo 'export DOCKER_API_VERSION=1.44' >> ~/.bashrc
+
+        # https://community.openpanel.org/d/236-openpanel-is-broken-on-debian-13-stay-on-debian-12/8
+        if [ "$VERSION_ID" = "13" ]; then
+            if ! grep -q "^skip-ssl\s*=\s*true" "$MYCNF"; then
+                echo "skip-ssl = true" | tee -a "$MYCNF" > /dev/null
+            fi
+        fi
+
     fi
 
 
@@ -606,7 +627,6 @@ clean_apt_and_dnf_cache(){
     if [ "$PACKAGE_MANAGER" == "dnf" ]; then
 		dnf clean  > /dev/null > /dev/null 2>&1
     elif [ "$PACKAGE_MANAGER" == "apt-get" ]; then
-		# clear /var/cache/apt/archives/   # TODO: cover https://github.com/debuerreotype/debuerreotype/issues/95
   		apt-get clean  > /dev/null > /dev/null 2>&1
 	fi
 }
@@ -1179,7 +1199,16 @@ setup_redis_service() {
 run_custom_postinstall_script() {
     if [ -n "$post_install_path" ]; then
         echo "Running post install script.."
-        debug_log bash $post_install_path
+        if [[ "$post_install_path" =~ ^https?:// ]]; then
+            tmp_script=$(mktemp)
+            echo "Downloading script from $post_install_path..."
+            wget -q -O "$tmp_script" "$post_install_path" || { echo "Failed to download script"; return 1; }
+            chmod +x "$tmp_script"
+            debug_log bash "$tmp_script"
+            rm -f "$tmp_script"
+        else
+            debug_log bash "$post_install_path"
+        fi
     fi
 }
 
@@ -1354,6 +1383,7 @@ install_python() {
     # Helper to install venv package for apt-based systems (when using distro python)
     install_venv_pkg() {
         if [ "$PACKAGE_MANAGER" = "apt-get" ]; then
+			debug_log apt install -y python3.12-venv || true
             debug_log $PACKAGE_MANAGER install -y python3-venv || true
         fi
     }
@@ -1470,8 +1500,13 @@ EOF' || true
 
 
 
-extra_step_for_caddy() {
+extra_steps_for_caddy() {
 	sed -i "s/example\.net/$current_ip/g" /etc/openpanel/caddy/redirects.conf > /dev/null 2>&1
+
+	# https://community.openpanel.org/d/235-caddy-restarting-when-etchosts-is-missing
+	if ! grep -qE '^127\.0\.0\.1\s+localhost' "/etc/hosts"; then
+	    echo "127.0.0.1 localhost" >> "/etc/hosts"
+	fi
 }
 
 
@@ -1485,12 +1520,28 @@ configure_coraza() {
 		debug_log wget --timeout=15 --tries=3 --inet4-only https://raw.githubusercontent.com/corazawaf/coraza/v3/dev/coraza.conf-recommended -O /etc/openpanel/caddy/coraza_rules.conf
   		[ "$REPAIR" = true ] && rm -rf /etc/openpanel/caddy/coreruleset/
 		debug_log timeout 300s git clone https://github.com/coreruleset/coreruleset /etc/openpanel/caddy/coreruleset/
+ 		#echo "Disabling rules (REQUEST-941-APPLICATION-ATTACK-XSS.conf)"
+		#mv /etc/openpanel/caddy/coreruleset/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf /etc/openpanel/caddy/coreruleset/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf.disabled
 	else
  		echo "Disabling CorazaWAF: setting caddy:latest docker image instead of openpanel/caddy-coraza"
 		sed -i 's|image: .*caddy.*|image: caddy:latest|' /root/docker-compose.yml
 	fi
 }
 
+
+generate_session_secret_keys() {
+	local secret_admin_key_file="/etc/openpanel/openadmin/secret.key"
+	if [ ! -f "$secret_admin_key_file" ]; then
+	    openssl rand -hex 32 > "$secret_admin_key_file"
+	    chmod 600 "$secret_admin_key_file"
+	fi
+
+	local secret_user_key_file="/etc/openpanel/openpanel/secret.key"
+	if [ ! -f "$secret_user_key_file" ]; then
+	    openssl rand -hex 32 > "$secret_user_key_file"
+	    chmod 600 "$secret_user_key_file"
+	fi
+}
 
 install_openadmin(){
     echo "Setting up OpenAdmin panel.."
@@ -1525,6 +1576,7 @@ install_openadmin(){
     cp -fr /etc/openpanel/openadmin/service/watcher.service ${SERVICES_DIR}watcher.service  > /dev/null 2>&1
 
     systemctl daemon-reload  > /dev/null 2>&1
+	generate_session_secret_keys
     systemctl start admin > /dev/null 2>&1
     systemctl enable admin > /dev/null 2>&1
 

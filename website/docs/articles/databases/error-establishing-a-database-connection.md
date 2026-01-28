@@ -1,6 +1,8 @@
-# Error: Establishing a Database Connection
+# Error Establishing a Database Connection
 
 If you see the error **“Error establishing a database connection”** in the OpenAdmin interface, it indicates that the database connection has failed.
+
+![admin error mysql](https://i.postimg.cc/tJMCcCx1/mysql-error-on-admin.png)
 
 ---
 
@@ -34,7 +36,7 @@ Example:
 ```bash
 root@openpanel:~# docker ps -a
 CONTAINER ID   IMAGE                COMMAND                  CREATED          STATUS                          PORTS     NAMES
-6d9885164cba   mysql/mysql-server   "/entrypoint.sh mysq…"   30 minutes ago   Restarting (1) 22 seconds ago             openpanel_mysql
+6d9885164cba   mysql/mysql-server   "/entrypoint.sh mysql…"   30 minutes ago   Restarting (1) 22 seconds ago             openpanel_mysql
 ```
 
 

@@ -17,17 +17,16 @@ const defaultOptions: InstallOptions = {
     email: { value: "", description: "Email address to receive admin logins and future notifications." },
     username: { value: "", description: "Set admin username (by default random generated)." },
     password: { value: "", description: "Set admin password (by default random generated)." },
+    "skip-firewall": { value: false, description: "Don't setup Sentinel Firewall (CSF)" },
+    "skip-dns-server": { value: false, description: "Don't setup local BIND9 DNS server" },
+    "imunifyav": { value: false, description: "Install and Setup ImunifyAV." },
+    "no-waf": { value: false, description: "Do not install CorazaWAF and disable it for new domains." },
+    "post-install": { value: "", description: "Specify the post install script path or URL." },
+    swap: { value: "", description: "Set size in GB for the swap partition." },
+    screenshots: { value: "", description: "Set the screenshots API URL." },
     "skip-requirements": { value: false, description: "Skip the requirements check." },
     "skip-panel-check": { value: false, description: "Skip checking if existing panels are installed." },
     "skip-apt-update": { value: false, description: "Skip the APT update." },
-    "skip-firewall": { value: false, description: "Don't setup CSF (Only if you will set another Firewall manually)" },
-    "skip-dns-server": { value: false, description: "Don't setup DNS server (Only if you will use external NS like Cloudflare)" },
-    "imunifyav": { value: false, description: "Install and Setup ImunifyAV." },
-    "no-ssh": { value: false, description: "Disable port 22 and whitelist administrator IP address." },
-    "no-waf": { value: false, description: "Do not install CorazaWAF and disable it for new domains." },
-    "post-install": { value: "", description: "Specify the post install script path." },
-    swap: { value: "", description: "Set size in GB for the swap partition." },
-    screenshots: { value: "", description: "Set the screenshots API URL." },
     debug: { value: false, description: "Display debug information during installation." },
     repair: { value: false, description: "Retry and overwrite everything." },
 };
@@ -52,7 +51,7 @@ const Install: React.FC = () => {
                 }
             } else if (config.value.trim() !== "") {
                 if (option === "username" || option === "password" || option === "post-install" || option === "screenshots") {
-                    command += ` --${option}="${config.value}"`;
+                    command += ` --${option}='${config.value}'`;
                 } else {
                     command += ` --${option}=${config.value}`;
                 }
