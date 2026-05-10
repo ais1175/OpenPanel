@@ -46,11 +46,14 @@ sidebar_position: 1
 - [Branding and White-Label](/docs/articles/dev-experience/customizing-openpanel-user-interface/)
 - [Add a Custom Message for OpenPanel User](/docs/articles/accounts/how-to-add-custom-message-in-openpanel/)
 - [Add Custom section with icons in Dashboard](/docs/articles/dev-experience/add-custom-icons-in-openpanel-dashboard/)
+- [Troubleshooting OpenPanel UI Errors](/docs/articles/support/how-to-troubleshoot-openpanel-error)
+- [Troubleshooting OpenAdmin UI Errors](/docs/articles/support/how-to-troubleshoot-openadmin-error)
 
 # Enterprise
 - [OpenPanel Pricing](/docs/articles/license/pricing/)
 - [Upgrading to OpenPanel Enterprise and activating License](/docs/articles/license/upgrade_to_openpanel_enterprise_and-activate_license/)
 - [Downgrading from OpenPanel Enterprise to Community edition](/docs/articles/license/how_to_downgrade_openpanel_license/)
+- [How Enterprise license expiration affects OpenPanel](/docs/articles/license/what_happens_when_openpanel_enterprise_license_expires/)
 - [Licenses for educational or non-profit organizations](/docs/articles/license/openpanel_enterprise_for_nonprofits/)
 
 # Domains
@@ -64,11 +67,13 @@ sidebar_position: 1
 
 # Files
 - [How to configure FTP server](/docs/articles/user-experience/how-to-setup-ftp-in-openpanel/)
+- [How to configure TLS for the FTP server](/docs/articles/user-experience/how-to-setup-tls-ftp-in-openpanel/)
 
 # Security
 - [Configuring ImunifyAV](/docs/articles/security/setup-imunifyav/)
 - [Rate-limiting access to OpenPanel or OpenAdmin](/docs/articles/dev-experience/rate_limiting_for_openpanel/)
 - [Restrict access to OpenAdmin](/docs/articles/dev-experience/limit_access_to_openadmin/)
+- [Disable the Terminal feature in OpenPanel](/docs/articles/dev-experience/disable-openpanel-web-terminal/)
 - [Disable the Terminal feature in OpenAdmin](/docs/articles/dev-experience/disable-openadmin-web-terminal/)
 - [Disable the Server Reboot feature in OpenAdmin](/docs/articles/dev-experience/disable-openadmin-server-reboot/)
 - [Limiting Connections with CSF](/docs/articles/security/how-to-limit-connections-csf)

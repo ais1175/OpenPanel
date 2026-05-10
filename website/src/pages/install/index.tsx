@@ -13,21 +13,23 @@ type InstallOptions = Record<string, InstallOption>;
 
 const defaultOptions: InstallOptions = {
     key: { value: "", description: "Set Enterprise license key." },
-    domain: { value: "", description: "Set the domain to be used for accessing panels." },
+    domain: { value: "", description: "Set the domain to be used for accessing both panels." },
+    "panel-domain": { value: "", description: "Set a separate domain to be used for OpenPanel only." },
     email: { value: "", description: "Email address to receive admin logins and future notifications." },
+    "admin-port": { value: "", description: "Specify a custom port for OpenAdmin (default is 2087)." },
+    "user-port": { value: "", description: "Specify a custom port for OpenPanel (default is 2083)." },
     username: { value: "", description: "Set admin username (by default random generated)." },
     password: { value: "", description: "Set admin password (by default random generated)." },
     "skip-firewall": { value: false, description: "Don't setup Sentinel Firewall (CSF)" },
     "skip-dns-server": { value: false, description: "Don't setup local BIND9 DNS server" },
-    "imunifyav": { value: false, description: "Install and Setup ImunifyAV." },
+    imunifyav: { value: false, description: "Install and Setup ImunifyAV." },
     "no-waf": { value: false, description: "Do not install CorazaWAF and disable it for new domains." },
     "post-install": { value: "", description: "Specify the post install script path or URL." },
     swap: { value: "", description: "Set size in GB for the swap partition." },
-    screenshots: { value: "", description: "Set the screenshots API URL." },
     "skip-requirements": { value: false, description: "Skip the requirements check." },
     "skip-panel-check": { value: false, description: "Skip checking if existing panels are installed." },
     "skip-apt-update": { value: false, description: "Skip the APT update." },
-    debug: { value: false, description: "Display debug information during installation." },
+    selfsigned: { value: false, description: "Generate and configure a Self-signed certificate." },
     repair: { value: false, description: "Retry and overwrite everything." },
 };
 
@@ -50,7 +52,7 @@ const Install: React.FC = () => {
                     command += ` --${option}`;
                 }
             } else if (config.value.trim() !== "") {
-                if (option === "username" || option === "password" || option === "post-install" || option === "screenshots") {
+                if (option === "username" || option === "password" || option === "post-install") {
                     command += ` --${option}='${config.value}'`;
                 } else {
                     command += ` --${option}=${config.value}`;
@@ -85,10 +87,16 @@ const Install: React.FC = () => {
                                     <input
                                         type={
                                             key === "email" ? "email" :
+                                            key === "admin-port" ? "number" :
+                                            key === "user-port" ? "number" :
                                             typeof config.value === "boolean" ? "checkbox" : "text"
                                         }
                                         id={key}
                                         name={key}
+                                        min={key === "admin-port" ? 1000 : undefined}
+                                        max={key === "admin-port" ? 30000 : undefined}
+                                        min={key === "user-port" ? 1000 : undefined}
+                                        max={key === "user-port" ? 30000 : undefined}
                                         {...(typeof config.value === "boolean"
                                             ? { checked: config.value }
                                             : { value: config.value })}
@@ -96,7 +104,7 @@ const Install: React.FC = () => {
                                         pattern={
                                             key === "username" || key === "password"
                                                 ? "^[a-zA-Z0-9]+$"
-                                                : key === "domain"
+                                                : key === "domain" || key === "panel-domain"
                                                 ? "^(?!-)(?:[A-Za-z0-9-]{1,63}\\.)+[A-Za-z]{2,}$"
                                                 : key === "key"
                                                 ? "^enterprise-.*$"
@@ -105,7 +113,7 @@ const Install: React.FC = () => {
                                         title={
                                             key === "username" || key === "password"
                                                 ? "Only letters and numbers are allowed"
-                                                : key === "domain"
+                                                : key === "domain" || key === "panel-domain"
                                                 ? "Enter a valid domain, e.g. openpanel.server.com"
                                                 : key === "key"
                                                 ? "License key must start with 'enterprise-'"

@@ -24,11 +24,11 @@ export const menuItems = [
             },
             {
                 label: "OpenCLI",
-                href: "https://dev.openpanel.com/cli/",
+                href: "/docs/articles/opencli/",
             },            
             {
                 label: "API Docs",
-                href: "https://dev.openpanel.com/openadmin-api/",
+                href: "/docs/articles/dev-experience/openadmin-api",
             },
             {
                 label: "Install Command",
@@ -76,10 +76,6 @@ export const menuItems = [
             {
                 label: "Plesk VS OpenPanel",
                 href: "/plesk-alternative",
-            },
-            {
-                label: "CyberPanel VS OpenPanel",
-                href: "/cyberpanel-alternative",
             },
         ],
     },    
