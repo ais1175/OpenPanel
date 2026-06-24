@@ -294,18 +294,82 @@ test('connect devices back button goes to /emails', async ({ page }) => {
 
 // ─── Webmail autologin ────────────────────────────────────────────────────────
 
-test('webmail autologin link opens popup', async ({ page }) => {
+test('webmail autologin and send/receive', async ({ page }) => {
+  test.setTimeout(90_000);
+
   await page.goto('/emails');
-  const webmailBtn = page.locator('a[data-email]').first();
+  const webmailBtn = page.locator('a[href*="/webmail/"]').first();
   const hasBtn = await webmailBtn.isVisible().catch(() => false);
   if (!hasBtn) { test.skip(); return; }
 
+  const emailAddress = await webmailBtn.getAttribute('href').then(h => h!.split('/webmail/')[1]);
+  expect(emailAddress).toBeTruthy();
+
+  // --- Open webmail popup ---
   const popupPromise = page.waitForEvent('popup');
   await webmailBtn.click();
   const popup = await popupPromise;
   await popup.waitForLoadState('load');
-  // Should land somewhere in webmail (roundcube, or a redirect)
   expect(popup.url()).toBeTruthy();
+
+  // --- Wait for Roundcube inbox to be ready ---
+  await popup.waitForSelector('#mailboxlist', { timeout: 20_000 });
+
+  // --- Click compose ---
+  await popup.locator('a.compose, button.compose').first().click();
+  await popup.waitForSelector('#compose-subject', { timeout: 10_000 });
+
+  // --- Fill To via the visible token widget input ---
+  const toInput = popup.locator('.token-input input, #compose-to .token-input, #compose_to .recipient input').first();
+  const hasTokenInput = await toInput.isVisible().catch(() => false);
+  if (hasTokenInput) {
+    await toInput.fill(emailAddress!);
+    await popup.keyboard.press('Enter');
+  } else {
+    // fallback: force into the hidden textarea
+    await popup.locator('#_to').scrollIntoViewIfNeeded();
+    await popup.locator('#_to').pressSequentially(emailAddress!, { delay: 50 });
+    await popup.keyboard.press('Enter');
+  }
+
+  // --- Subject ---
+  const subject = `Playwright self-send ${Date.now()}`;
+  await popup.locator('#compose-subject').fill(subject);
+
+  // --- Body ---
+  const bodyText = 'Automated Playwright send/receive test.';
+  const tinyFrame = popup.frameLocator('#composebody_ifr');
+  const hasHtmlEditor = await tinyFrame.locator('body').isVisible().catch(() => false);
+  if (hasHtmlEditor) {
+    await tinyFrame.locator('body').fill(bodyText);
+  } else {
+    await popup.locator('#composebody').fill(bodyText);
+  }
+
+  // --- Send ---
+  await popup.locator('button.btn-primary.send').click();
+  await popup.waitForSelector('#messagestack .confirmation, div.notice.confirmation', {
+    timeout: 15_000,
+  });
+
+  // --- Sent folder ---
+  await popup.locator('#mailboxlist a[rel="sent"], #mailboxlist .sent a').first().click();
+  await popup.waitForLoadState('networkidle');
+  await expect(popup.locator('#messagelist tbody tr')).toContainText(subject, { timeout: 10_000 });
+  
+  // --- Inbox ---
+  await popup.locator('#mailboxlist a[rel="inbox"], #mailboxlist .inbox a').first().click();
+  await popup.waitForLoadState('networkidle');
+  
+  await expect.poll(
+    async () => {
+      await popup.reload();
+      await popup.waitForLoadState('networkidle');
+      return popup.locator('#messagelist tbody tr').filter({ hasText: subject }).count();
+    },
+    { timeout: 60_000, intervals: [5_000] },
+  ).toBeGreaterThan(0);
+
   await popup.close();
 });
 
