@@ -444,12 +444,10 @@ test('email filter raw mode shows textarea', async ({ page }) => {
   await page.goto('/emails');
   const firstRow = page.locator('#email-accounts tbody tr').first();
   if (!await firstRow.isVisible().catch(() => false)) { test.skip(); return; }
-
   const email = (await firstRow.locator('td').first().textContent())?.trim();
   if (!email?.includes('@')) { test.skip(); return; }
-
   await page.goto(`/emails/filter/${email}/raw`);
-  const textarea = page.locator('textarea[name="new_content"]');
+  const textarea = page.locator('#raw_content');
   await expect(textarea).toBeVisible();
   await expect(page.getByRole('button', { name: /save file/i })).toBeVisible();
 });
@@ -483,9 +481,10 @@ test('import emails back button links to /emails', async ({ page }) => {
 // ─── Export ───────────────────────────────────────────────────────────────────
 
 test('export emails returns a CSV download', async ({ page }) => {
+  await page.goto('/emails');
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.goto('/emails/export'),
+    page.evaluate(() => { window.location.href = '/emails/export'; }),
   ]);
   expect(download.suggestedFilename()).toMatch(/\.csv$/);
 });
