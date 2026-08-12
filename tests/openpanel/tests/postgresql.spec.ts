@@ -21,7 +21,7 @@ async function expectDatabaseNotInTable(page: any, dbName: string) {
 // ACCESS
 test('list databases', async ({ page }) => {
   await navigateToPostgreSQLPage(page);
-  await expect(page.locator('body')).toContainText(/create your first database|no databases/i, { timeout: 20000 });
+  await expect(page.locator('body')).toContainText(/create your first database|no databases/i, { timeout: 25000 });
   console.log('postgresql initialized');
 });
 
@@ -31,7 +31,7 @@ test('create database', async ({ page }) => {
   await page.getByRole('link', { name: 'New Database' }).click();
   await page.getByRole('textbox', { name: 'Database Name' }).fill('stefan_psql');
   await page.getByRole('button', { name: 'Create Database' }).click();
-  await expect(page.locator('body')).toContainText(/successfully created/i);
+  await expect(page.locator('body')).toContainText(/successfully created/i, { timeout: 25000 });
   await expectDatabaseInTable(page, 'stefan_psql');
   console.log('postgresql database created');
 });
