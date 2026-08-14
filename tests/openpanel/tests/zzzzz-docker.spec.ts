@@ -354,7 +354,7 @@ test('logs page - ?container= param pre-selects and loads', async ({ page }) => 
 
 test('terminal page without container shows service picker', async ({ page }) => {
   await page.goto('/containers/terminal');
-  await expect(page.locator('h1')).toContainText('Docker Terminal');
+  await expect(page.locator('h1')).toContainText('Container Terminal');
   await expect(page.locator('select#service-select')).toBeVisible();
 });
 
@@ -369,7 +369,7 @@ test('terminal page - selecting service redirects', async ({ page }) => {
     const value = await options.first().getAttribute('value');
     await select.selectOption(value);
     await page.waitForURL(`**/containers/terminal/${value}`, { timeout: 5000 });
-    await expect(page.locator('h1')).toContainText('Docker Terminal');
+    await expect(page.locator('h1')).toContainText('Container Terminal');
     await expect(page.locator('#terminal')).toBeVisible();
     await expect(page.locator('select#shell')).toBeVisible();
   } else {
@@ -380,7 +380,7 @@ test('terminal page - selecting service redirects', async ({ page }) => {
 test('terminal', async ({ page }) => {
   test.setTimeout(90_000);
 
-  await page.goto('/containers/terminal/php-fpm-8.0');
+  await page.goto('/containers/terminal/php-fpm-8.5');
   await page.locator('.xterm-rows > div').first().click();
   await page.locator('.xterm-rows > div').first().click({ button: 'right' });
   await page.getByRole('textbox', { name: 'Terminal input' }).fill('php -v');
@@ -393,7 +393,7 @@ test('terminal', async ({ page }) => {
 });
 
 test('terminal - reconnect button appears after disconnect', async ({ page }) => {
-  await page.goto('/containers/terminal/php-fpm-8.0');
+  await page.goto('/containers/terminal/php-fpm-8.5');
   await page.waitForTimeout(2000);
 
   // Status dot and text should be present

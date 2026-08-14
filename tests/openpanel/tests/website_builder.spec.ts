@@ -38,7 +38,8 @@ test('website builder', async ({ page }) => {
   await page.goto('http://website-builder.tests.openpanel.org/');
   await expect(async () => {
     await page.reload();
-    await expect(page.locator('body')).toContainText('tailwindcss');
+    const html = await page.content();
+    expect(html).toContain('tailwindcss');
   }).toPass({ timeout: 30000, intervals: [1000] });
 
   
@@ -46,7 +47,7 @@ test('website builder', async ({ page }) => {
   await page.goto('/sites');
   const table = page.locator('tbody.divide-y.divide-gray-200.dark\\:divide-gray-800');
   await expect(table).toBeVisible();
-  await expect(page.locator('tr#site-row-website-builder.tests.openpanel.org')).toBeVisible();
+  await expect(page.locator('tr[id="site-row-website-builder.tests.openpanel.org"]')).toBeVisible();
   console.log('website install is working');
   await expect(page.locator('a[href="/website-builder/edit?domain=website-builder.tests.openpanel.org"]')).toBeVisible();
   console.log('website edit is working');
@@ -58,7 +59,7 @@ test('website builder', async ({ page }) => {
   await page.locator('button#confirm-delete-site').click();
   await expect(page.locator('text=Website deleted successfully!')).toBeVisible({ timeout: 30000 });
   await page.goto('/sites');
-  await expect(page.locator('tr#site-row-website-builder.tests.openpanel.org')).not.toBeVisible();
+  await expect(page.locator('tr[id="site-row-website-builder.tests.openpanel.org"]')).not.toBeVisible();
   console.log('website uninstall is working');
 
   // 5. install again and test detach
@@ -66,8 +67,9 @@ test('website builder', async ({ page }) => {
   await page.locator('#domain_id').selectOption('website-builder.tests.openpanel.org');
   await page.locator('#installButton').click();
   await expect(page.locator('text=Website creation completed!')).toBeVisible({ timeout: 60000 });
-  await expect(page).toHaveURL(/\/website-builder\/edit\?domain=website-builder\.tests\.openpanel\.org\/.+/);
+  await expect(page).toHaveURL(url => url.pathname === '/website-builder/edit' && url.searchParams.get('domain') === domain);
 
+  
   await page.goto('/website?domain=website-builder.tests.openpanel.org');
   await page.locator('a#remove-tab').click();
   await page.locator('button#detach-site').click();
@@ -88,9 +90,12 @@ test('website builder site appears in sites list', async ({ page }) => {
 
 
 test('website builder edit page loads', async ({ page }) => {
-  await page.goto('/website-builder/edit');
-  await expect(page).toHaveURL(/website-builder\/edit/);
-  await expect(page.locator('body')).toContainText(/edit|builder|domain|grapejs/i, { timeout: 15000 });
+  await page.goto('/website-builder/edit?domain=website-builder.tests.openpanel.org');
+
+  await expect(page).toHaveURL(url => url.pathname === '/website-builder/edit' && url.searchParams.get('domain') === domain);
+  
+  await expect(page.locator('.gjs-cv-canvas iframe')).toBeVisible({ timeout: 15000 });
+
   console.log('website builder edit page accessible');
 });
 

@@ -158,7 +158,7 @@ if ($res === false) {
 
 for (const service of services) {
   test(service.name, async ({ page }) => {
-    test.setTimeout(120_000); // 120s so we also do the healthcheck
+    test.setTimeout(60_000); // 60s so we also do the healthcheck
   
     await navigateToPage(page, service.name);
 
@@ -218,15 +218,16 @@ for (const service of services) {
     const expectedOk = `${service.name.toUpperCase()}_OK`;
     await expect(body?.trim().includes(expectedOk), `Expected "${expectedOk}" in response but got: ${body}`).toBe(true);
     console.log(`${service.name} connection test from php passed`);
-
+  
     // CONTAINER STATS
     await navigateToPage(page, service.name);
-    await page.waitForResponse(response => response.url().includes(`/api/services?name=${service.name}`) && response.status() === 200);
+    
     const statsContainer = page.locator('#service-page-stats');
-    await expect(statsContainer.locator('span.font-medium').filter({ hasText: '--' })).toHaveCount(0, { timeout: 5000 });
+    await expect(statsContainer.locator('span.font-medium').filter({ hasText: '--' })).toHaveCount(0, { timeout: 15000 });
     const getStat = (label) => statsContainer.locator('div', { hasText: label }).locator('span.font-medium').last();
-
+    
     const statItems = statsContainer.locator('div.flex.items-center.justify-between');
+          
     const count = await statItems.count();
     
     const stats = {};
@@ -261,7 +262,7 @@ for (const service of services) {
 
     // LOGS
     await page.click('button:has-text("View container log")');
-    await page.waitForResponse(response => response.url().includes(`/api/containers/log/${service.name}`) && response.status() === 200);
+    await page.waitForTimeout(1000);
     const logContent = page.locator('#log-content');
     await expect(logContent).not.toHaveText('No logs.');
     await expect(logContent).not.toBeEmpty();

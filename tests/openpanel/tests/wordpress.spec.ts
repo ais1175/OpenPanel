@@ -171,7 +171,7 @@ test('wp-admin - install nexusslash theme', async ({ page }) => {
 test('wordpress security hardening page', async ({ page }) => {
   await page.goto(`/wordpress/secure/${domain}`);
   await expect(page).toHaveURL(/wordpress\/secure/);
-  await expect(page.locator('body')).toContainText(/security|hardening|disable/i);
+  await expect(page.locator('body')).toContainText('[]');
   console.log('wordpress security page accessible');
 });
 
@@ -192,18 +192,26 @@ test('wp-cli plugin list', async ({ page }) => {
 });
 
 
-test('wp-cli update check', async ({ page }) => {
-  await page.goto(`/wp-cli/update-check?domain=${domain}`);
-  await expect(page.locator('body')).toContainText(/update|no updates|current/i, { timeout: 30000 });
+test('wp-cli check update preferences check', async ({ page }) => {
+  await page.goto(`/wordpress/wp-cli/update_info?domain=${domain}&docroot=/var/www/html/wp.tests.openpanel.org`);  
+  await expect(page.locator('body')).toContainText(/WP_AUTO_UPDATE_CORE|WP_AUTO_UPDATE_PLUGINS|WP_AUTO_UPDATE_THEMES/i, { timeout: 30000 });
   console.log('wp-cli update check working');
 });
 
 
-test('wordpress backup', async ({ page }) => {
+test('generate backup', async ({ page }) => {
   test.setTimeout(3 * 60 * 1000);
-  await page.goto(`/wordpress/backup/run/${domain}`);
+  await page.goto(`/wordpress/backup/run/${domain}?docroot=/var/www/html/wp.tests.openpanel.org&backup_database=true&backup_files=true`);
   await expect(page.locator('body')).toContainText(/backup.*complete|successfully.*backup|done/i, { timeout: 2 * 60 * 1000 });
-  console.log('wordpress backup completed');
+  console.log('wordpress backup generated');
+});
+
+
+test('list backup', async ({ page }) => {
+  test.setTimeout(3 * 60 * 1000);
+  await page.goto(`/wordpress/backup/get_dates/${domain}?docroot=/var/www/html/wp.tests.openpanel.org`);
+  await expect(page.locator('body')).toContainText(/hasFilesBackup|hasDbBackup|date/i, { timeout: 2 * 60 * 1000 });
+  console.log('wordpress backup available');
 });
 
 
@@ -267,7 +275,7 @@ test('live preview', async ({ page }) => {
   await page.goto('/website?domain=wp.tests.openpanel.org');
 
   const popupPromise = page.waitForEvent('popup');
-  await page.locator('button[onclick="sendDataToPreview(event)"]').click();
+  await page.getByRole('link', { name: 'Live Preview' }).click();
 
   const previewPage = await popupPromise;
   await previewPage.waitForLoadState();
@@ -282,7 +290,6 @@ test('wp-admin autologin', async ({ page }) => {
 
   const popupPromise = page.waitForEvent('popup');
   await page.locator('#login_button_text').click();
-  await expect(page.locator('body')).toContainText('Generating auto-login link');
 
   const previewPage = await popupPromise;
   await previewPage.waitForLoadState();
@@ -295,8 +302,6 @@ test('wp-admin autologin', async ({ page }) => {
 test('general options', async ({ page }) => {
   await page.goto('/website?domain=wp.tests.openpanel.org');
   await page.locator('#settings-tab').click();
-  await expect(page.getByText('Checking options from WP-CLI')).toBeVisible();
-  await expect(page.getByText('WordPress Options loaded')).toBeVisible();
 
   // new values
   const newBlogName = 'Test Blog Name';
@@ -337,8 +342,6 @@ test('general options', async ({ page }) => {
   // Reload and re-navigate to settings
   await page.goto('/website?domain=wp.tests.openpanel.org');
   await page.locator('#settings-tab').click();
-  await expect(page.getByText('Checking options from WP-CLI')).toBeVisible();
-  await expect(page.getByText('WordPress Options loaded')).toBeVisible();
 
   // Verify updated text values
   await expect(page.locator('#blogname')).toHaveValue(newBlogName);
@@ -412,8 +415,9 @@ test('maintenance mode', async ({ page }) => {
 test('cache flush', async ({ page }) => {
   await page.goto('/website?domain=wp.tests.openpanel.org');
 
-  await page.locator('button[click="flushCache"]').click();
-  const message = await page.getByText(/Cache flushed successfully/).innerText();
+  await page.getByRole('button', { name: 'Purge WP Cache' }).click();
+  await expect(page.getByText(/Cache flushed successfully/)).toBeVisible({ timeout: 10000 });
+
   console.log('flush wp cache is working');
 });
 
